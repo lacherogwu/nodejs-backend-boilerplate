@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import glob from 'glob';
 import Aigle from 'aigle';
-import wrapper from '../../utils/expressWrapper.js';
+import controllerWrapper from '../../utils/controllerWrapper.js';
+import middlewareWrapper from '../../utils/middlewareWrapper.js';
 import _ from 'lodash';
 import middlewares from '../middlewares/index.js';
 
@@ -30,6 +31,7 @@ const getMiddlewares = controller => {
 	const middlewaresArray = _(middlewares)
 		.filter(item => _.some(item.controllers, mdController => _.every(['moduleName', 'method', 'name'], item => matchString(controller[item], mdController[item]))))
 		.flatMap(i => i.middlewares)
+		.map(item => middlewareWrapper(item))
 		.value();
 
 	return [...new Set(middlewaresArray)];
@@ -53,7 +55,7 @@ const buildRoutes = async () => {
 
 const useRoutes = async () => {
 	const routes = await buildRoutes();
-	_.each(routes, (controllers, route) => _.each(controllers, ({ method, name, middlewares, handler }) => router[method](`/${route}/${name}`, ...middlewares, wrapper(handler))));
+	_.each(routes, (controllers, route) => _.each(controllers, ({ method, name, middlewares, handler }) => router[method](`/${route}/${name}`, ...middlewares, controllerWrapper(handler))));
 };
 
 await useRoutes();

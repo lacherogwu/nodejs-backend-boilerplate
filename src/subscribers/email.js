@@ -1,4 +1,4 @@
-import EventService from '../services/EventService.js';
+import { EventService } from '../services/index.js';
 
 EventService.on('signup', async ({ data }) => {
 	// send email
