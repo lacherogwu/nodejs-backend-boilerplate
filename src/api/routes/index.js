@@ -27,7 +27,11 @@ const getControllers = async () => {
 const matchString = (search, value) => value === search || value === '*';
 
 const getMiddlewares = controller => {
-	const middlewaresArray = middlewares.filter(item => item.controllers.some(mdController => ['moduleName', 'method', 'name'].every(item => matchString(controller[item], mdController[item])))).flatMap(i => i.middlewares);
+	const middlewaresArray = _(middlewares)
+		.filter(item => _.some(item.controllers, mdController => _.every(['moduleName', 'method', 'name'], item => matchString(controller[item], mdController[item]))))
+		.flatMap(i => i.middlewares)
+		.value();
+
 	return [...new Set(middlewaresArray)];
 };
 

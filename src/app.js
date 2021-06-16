@@ -3,6 +3,7 @@ import api from './api/index.js';
 import _ from 'lodash';
 import AppError from './utils/AppError.js';
 import errorHandler from './api/errorHandler.js';
+import './subscribers/email.js';
 
 const app = express();
 
