@@ -1,17 +1,40 @@
-import Models from '../../models/index.js';
+import mongoose from 'mongoose';
 
 class DbService {
-	create(collection, doc) {
-		return Models[collection].create(doc);
+	/**
+	 *
+	 * @param {mongoose.Model} Model
+	 * @param {*} doc
+	 * @returns {Promise}
+	 */
+	create(Model, doc) {
+		return Model.create(doc);
 	}
 
-	findOne(collection, doc) {
-		return Models[collection].findOne(doc);
+	/**
+	 *
+	 * @param {mongoose.Model} Model
+	 * @param {mongoose.FilterQuery} filter
+	 * @param {*} projection
+	 * @param {mongoose.QueryOptions} options
+	 * @returns {Promise}
+	 */
+	findOne(Model, filter, projection, options) {
+		return Model.findOne(filter, projection, options);
 	}
 
-	findById(collection, id) {
-		return Models[collection].findById(id);
+	/**
+	 *
+	 * @param {mongoose.Model} Model
+	 * @param {*} id
+	 * @param {*} projection
+	 * @param {mongoose.MongooseQueryOptions} options
+	 * @returns {Promise}
+	 */
+	findById(Model, id, projection, options) {
+		return Model.findById(id, projection, options);
 	}
 }
 
+// await new DbService().findById(Model, id, test)
 export default new DbService();

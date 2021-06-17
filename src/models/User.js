@@ -1,24 +1,22 @@
 import mongoose from 'mongoose';
+import { BaseSchema } from '../shared/index.js';
 import validation from '../utils/validations.js';
 
-const Schema = new mongoose.Schema(
-	{
-		email: {
-			type: String,
-			required: true,
-			unique: true,
-			lowercase: true,
-			trim: true,
-			validate: [validation.email, 'Please enter a valid email'],
-		},
-		password: {
-			type: String,
-			required: true,
-			minlength: [6, 'Minimum password length is 6 characters'],
-		},
+const Schema = new BaseSchema({
+	email: {
+		type: String,
+		required: true,
+		unique: true,
+		lowercase: true,
+		trim: true,
+		validate: [validation.email, 'Please enter a valid email'],
 	},
-	{ timestamps: true }
-);
+	password: {
+		type: String,
+		required: true,
+		minlength: [6, 'Minimum password length is 6 characters'],
+	},
+});
 
 // method to remove pw from user object
 Schema.methods.toJSON = function () {
