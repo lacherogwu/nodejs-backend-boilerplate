@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getQuery } from '../utils/mongoose.js';
 
 class Crud {
 	#model;
@@ -14,8 +15,21 @@ class Crud {
 	 *
 	 * @returns {Promise}
 	 */
-	find() {
-		return this.#model.find();
+	find(isFindOne, filter = {}, fields, sort) {
+		let query;
+
+		if (!isFindOne) {
+			query = this.#model.find(filter);
+			if (sort) query.sort(getQuery(sort));
+		} else {
+			query = this.#model.findOne(filter);
+		}
+
+		if (fields) {
+			query.select(getQuery(fields));
+		}
+
+		return query;
 	}
 
 	/**
