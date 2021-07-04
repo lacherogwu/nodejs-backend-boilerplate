@@ -1,8 +1,7 @@
-import { DbService } from '../index.js';
 import { User } from '../../models/index.js';
 import jwt from 'jsonwebtoken';
 import config from '../../config/index.js';
-import AppError from '../../utils/AppError.js';
+import { AppError } from '../../shared/index.js';
 import argon2 from 'argon2';
 
 class AuthService {
@@ -12,22 +11,22 @@ class AuthService {
 
 	async signup(email, password) {
 		const hashedPassword = await argon2.hash(password, { type: argon2.argon2id });
-		const user = await DbService.create(User, { email, password: hashedPassword });
-		const token = this.createToken(user._id);
-		const cookie = this.createCookie('jwt', token);
+		const user = await User.create({ email, password: hashedPassword });
+		const token = this.#createToken(user._id);
+		const cookie = this.#createCookie('jwt', token);
 
 		return { user, cookie };
 	}
 
 	async login(email, password) {
-		const user = await DbService.findOne(User, { email });
+		const user = await User.findOne({ email });
 
 		// match password
 		const passwordMatch = await argon2.verify(user.password, password);
 		if (!user || !passwordMatch) throw new AppError('Email address or password is incorrect', 401);
 
-		const token = this.createToken(user._id);
-		const cookie = this.createCookie('jwt', token);
+		const token = this.#createToken(user._id);
+		const cookie = this.#createCookie('jwt', token);
 
 		return { user, cookie };
 	}
@@ -38,19 +37,19 @@ class AuthService {
 		// verify token
 		const decodedToken = jwt.verify(token, config.jwtSecret);
 
-		const user = await DbService.findById(User, decodedToken.id);
+		const user = await User.findById(decodedToken.id);
 		if (!user) throw new AppError('Authentication failed', 401);
 
 		return user;
 	}
 
-	createToken(id) {
+	#createToken(id) {
 		return jwt.sign({ id }, config.jwtSecret, {
 			expiresIn: this.maxAge,
 		});
 	}
 
-	createCookie(name, data) {
+	#createCookie(name, data) {
 		return [
 			name,
 			data,

@@ -10,6 +10,7 @@ const Schema = new BaseSchema({
 		lowercase: true,
 		trim: true,
 		validate: [validation.email, 'Please enter a valid email'],
+		index: true,
 	},
 	password: {
 		type: String,

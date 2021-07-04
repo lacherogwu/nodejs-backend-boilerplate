@@ -1,4 +1,4 @@
-import AppError from '../utils/AppError.js';
+import { AppError } from '../shared/index.js';
 import config from '../config/index.js';
 
 const axiosError = err => {

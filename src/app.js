@@ -1,7 +1,7 @@
 import express from 'express';
 import api from './api/index.js';
 import _ from 'lodash';
-import AppError from './utils/AppError.js';
+import { AppError } from './shared/index.js';
 import errorHandler from './api/errorHandler.js';
 import './subscribers/email.js';
 

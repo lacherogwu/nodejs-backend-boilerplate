@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import userAuthentication from './auth/userAuthentication.js';
+import speedLimiter from './speedLimiter.js';
 
 /**
  * @type {express.Handler]}
