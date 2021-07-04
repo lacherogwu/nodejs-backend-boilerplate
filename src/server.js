@@ -4,7 +4,7 @@ import db from './db.js';
 
 const { port, dbURI } = config;
 
-await db(dbURI);
+// await db(dbURI);
 const server = app.listen(port, () => console.log(`listening at http://localhost:${port}`));
 
 // handle unhandled rejection

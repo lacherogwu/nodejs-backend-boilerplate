@@ -10,7 +10,7 @@ const app = express();
 // app behind proxy (nginx)
 app.set('trust proxy', true);
 
-_.each(api, router => app.use(router));
+// _.each(api, router => app.use(router));
 
 // 404 error handler
 app.all('*', (req, res, next) => next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404)));

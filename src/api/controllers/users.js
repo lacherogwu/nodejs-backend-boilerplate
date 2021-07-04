@@ -29,10 +29,15 @@ const get_logout = async (req, res, next) => {
 	res.cookie('jwt', '', { maxAge: 1 });
 };
 
+const getSomethingPopular = async (req, res, next) => {
+	return 'hello';
+};
+
 export default {
 	get_auth,
 	post_signup,
 	post_login,
 	get_authenticate,
 	get_logout,
+	get_mishel: getSomethingPopular,
 };
