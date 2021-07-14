@@ -6,7 +6,7 @@ import './subscribers/email.js';
 import FrameworkService from './services/FrameworkService.js';
 
 // FrameworkService.setSettings().useRoutesAndMiddlewares().useErrorHandlers();
-FrameworkService.useApi(api);
+FrameworkService.setSettings().useApi(api).useErrorHandlers();
 
 // _.each(api, router => app.use(router));
 
