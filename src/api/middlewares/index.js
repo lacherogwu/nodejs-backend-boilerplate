@@ -5,16 +5,11 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import userAuthentication from './auth/userAuthentication.js';
 import speedLimiter from './speedLimiter.js';
+import FrameworkService from '../../services/FrameworkService.js';
 
-/**
- * @type {express.Handler]}
- */
-const globalMiddlewares = [helmet(), morgan('combined'), cors(), express.json(), cookieParser()];
+const globalMiddlewares = FrameworkService.buildGlobalMiddlewares([helmet(), morgan('combined'), cors(), express.json(), cookieParser(), speedLimiter]);
 
-/**
- * @type {{ routes: { name: String, methods: [('any'|'get'|'post'|'update'|'delete')], controllers: [String] }[], middlewares: [express.Handler] }[]}
- */
-const routesMiddlewares = [
+const routesMiddlewares = FrameworkService.buildRoutesMiddlewares([
 	{
 		routes: [
 			{
@@ -44,6 +39,6 @@ const routesMiddlewares = [
 			},
 		],
 	},
-];
+]);
 
 export default { globalMiddlewares, routesMiddlewares };

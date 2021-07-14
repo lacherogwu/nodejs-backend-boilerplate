@@ -1,11 +1,12 @@
 import config from './config/index.js';
 import app from './app.js';
 import db from './db.js';
+import FrameworkService from './services/FrameworkService.js';
 
 const { port, dbURI } = config;
 
 // await db(dbURI);
-const server = app.listen(port, () => console.log(`listening at http://localhost:${port}`));
+const server = FrameworkService.initApp(port);
 
 // handle unhandled rejection
 process.on('unhandledRejection', err => {

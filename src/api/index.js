@@ -1,3 +1,4 @@
 import routes from './routes/index.js';
+import middlewares from './middlewares/index.js';
 
-export default { routes };
+export default { routes, middlewares };
