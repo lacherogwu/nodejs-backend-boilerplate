@@ -97,8 +97,9 @@ class HttpService {
 		const middlewares = _.transform(
 			this.#routesMiddlewares,
 			(acc, routesMiddlewaresObject) => {
-				const isEligible = routesMiddlewaresObject.routes.every(route => this.#includesOrAny(route.paths, controller.path) && this.#includesOrAny(route.methods, controller.method) && this.#includesOrAny(route.controllers, controller.name));
+				const isEligible = _.every(routesMiddlewaresObject.routes, route => this.#includesOrAny(route.paths, controller.path) && this.#includesOrAny(route.methods, controller.method) && this.#includesOrAny(route.controllers, controller.name));
 				if (!isEligible) return;
+
 				acc.push(...routesMiddlewaresObject.middlewares);
 			},
 			[]
