@@ -1,12 +1,12 @@
-import api from './api/index.js';
 import _ from 'lodash';
 import { AppError } from './shared/index.js';
 import errorHandler from './api/errorHandler.js';
 import './subscribers/email.js';
-import FrameworkService from './services/FrameworkService.js';
+import HttpService from './services/HttpService.js';
+import './api/middlewares/index.js';
 
-// FrameworkService.setSettings().useRoutesAndMiddlewares().useErrorHandlers();
-FrameworkService.setSettings().useApi(api).useErrorHandlers();
+await HttpService.buildRoutes('./src/api/controllers/*.js');
+HttpService.setSettings().useApi().useErrorHandlers();
 
 // _.each(api, router => app.use(router));
 
@@ -15,4 +15,4 @@ FrameworkService.setSettings().useApi(api).useErrorHandlers();
 
 // app.use(errorHandler); // Global Error Handling Middleware
 
-export default FrameworkService.app;
+export default HttpService.app;

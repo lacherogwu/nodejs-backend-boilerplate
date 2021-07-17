@@ -1,12 +1,12 @@
 import config from './config/index.js';
 import app from './app.js';
 import db from './db.js';
-import FrameworkService from './services/FrameworkService.js';
+import HttpService from './services/HttpService.js';
 
 const { port, dbURI } = config;
 
 // await db(dbURI);
-const server = FrameworkService.initApp(port);
+const server = HttpService.initApp(port);
 
 // handle unhandled rejection
 process.on('unhandledRejection', err => {

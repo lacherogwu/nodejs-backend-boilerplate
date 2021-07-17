@@ -5,17 +5,25 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import userAuthentication from './auth/userAuthentication.js';
 import speedLimiter from './speedLimiter.js';
-import FrameworkService from '../../services/FrameworkService.js';
+import HttpService from '../../services/HttpService.js';
 
-const globalMiddlewares = FrameworkService.buildGlobalMiddlewares([helmet(), morgan('combined'), cors(), express.json(), cookieParser(), speedLimiter]);
-
-const routesMiddlewares = FrameworkService.buildRoutesMiddlewares([
+// prettier-ignore
+HttpService
+	.buildGlobalMiddlewares([
+		helmet(),
+		morgan('combined'),
+		cors(),
+		express.json(),
+		cookieParser(),
+		speedLimiter
+	])
+	.buildRoutesMiddlewares([
 	{
 		routes: [
 			{
-				name: 'users',
-				methods: ['get'],
-				controllers: ['authenticate'],
+				paths: ['users'],
+				methods: ['post'],
+				controllers: ['authenticate', 'logout', 'login'],
 			},
 		],
 		middlewares: [userAuthentication],
@@ -23,15 +31,15 @@ const routesMiddlewares = FrameworkService.buildRoutesMiddlewares([
 	{
 		routes: [
 			{
-				name: 'monsters',
-				methods: ['any'],
+				paths: ['users'],
+				methods: ['*'],
 				controllers: ['*'],
 			},
-			{
-				name: 'items',
-				methods: ['post'],
-				controllers: ['getSomething'],
-			},
+			// {
+			// 	paths: ['items'],
+			// 	methods: ['post'],
+			// 	controllers: ['getSomething'],
+			// },
 		],
 		middlewares: [
 			(req, res, next) => {
@@ -40,5 +48,3 @@ const routesMiddlewares = FrameworkService.buildRoutesMiddlewares([
 		],
 	},
 ]);
-
-export default { globalMiddlewares, routesMiddlewares };
