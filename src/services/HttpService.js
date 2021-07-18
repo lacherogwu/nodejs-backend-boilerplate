@@ -2,6 +2,7 @@ import express from 'express';
 import glob from 'glob';
 import Aigle from 'aigle';
 import _ from 'lodash';
+import { AppError } from '../shared/index.js';
 
 class HttpService {
 	/**
@@ -32,14 +33,47 @@ class HttpService {
 		this.app = express();
 	}
 
-	setSettings() {
-		// app behind proxy (nginx)
-		this.app.set('trust proxy', true);
-
+	/**
+	 *
+	 * @param {{ [key: string]: string }} settings
+	 * @returns
+	 */
+	setSettings(settings) {
+		_.each(settings, (value, key) => this.app.set(key, value));
 		return this;
 	}
 
-	useErrorHandlers() {
+	/**
+	 *
+	 * @param {[{
+	 * 	identifier: string,
+	 * 	value: *,
+	 * 	mode: ('EQ'|'IN'),
+	 * 	handler: (err: Error) => { statusCode: number, message: string, data: {} }
+	 * }]} errorHandlers
+	 */
+	useGlobalErrorHandlers(errorHandlers) {
+		this.app.use(
+			this.#errorHandlerWrapper((err, req, res, next) => {
+				console.log('heere');
+				const errorHandler = _.find(errorHandlers, errorHandlerObject => {
+					const modes = {
+						EQ: (a, b) => a === b,
+						IN: (a, b) => _.includes(a, b),
+					};
+					return modes[errorHandlerObject.mode || 'EQ'](err[errorHandlerObject.identifier], errorHandlerObject.value);
+				});
+				return errorHandler?.handler(err) || {};
+			})
+		);
+	}
+
+	/**
+	 *
+	 * @returns HttpService
+	 */
+	use404ErrorHandler() {
+		this.app.all('*', (req, res, next) => next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404)));
 		return this;
 	}
 
@@ -48,11 +82,9 @@ class HttpService {
 	}
 
 	#useRoutesAndMiddlewares() {
-		console.log('using routes and middlewares');
-
 		_.each(this.#routes, route => {
-			const middlewares = _.map(route.middlewares, middleware => this.#middlewareWrapper(middleware));
-			this.app[route.method](`/${route.path}/${route.name}`, ...middlewares, this.#controllerWrapper(route.handler));
+			const wrappedMiddlewares = _.map(route.middlewares, middleware => this.#middlewareWrapper(middleware));
+			this.app[route.method](`/${route.path}/${route.name}`, ...wrappedMiddlewares, this.#controllerWrapper(route.handler));
 		});
 	}
 
@@ -73,7 +105,14 @@ class HttpService {
 	}
 
 	/**
-	 * @param {{ routes: { path: String, methods: [('*'|'get'|'post'|'update'|'delete')], controllers: [String] }[], middlewares: [express.Handler] }[]} middlewares - Build Routes Middlewares
+	 * @param {[{
+	 * 		routes: [{
+	 * 			paths: [string],
+	 * 			methods: [('*'|'get'|'post'|'update'|'delete')],
+	 * 			controllers: [string]
+	 * 		}],
+	 * 		middlewares: [express.Handler]
+	 * 	}]} middlewares - Build Routes Middlewares
 	 * @returns HttpService
 	 */
 	buildRoutesMiddlewares(middlewares) {
@@ -84,10 +123,6 @@ class HttpService {
 	#includesOrAny(array, string) {
 		return _.includes(array, string) || _.includes(array, '*');
 	}
-	#middlewareEligible(middlewareObject, controller) {
-		console.log('middlewareObject', middlewareObject);
-		console.log('controller', controller);
-	}
 
 	/**
 	 *
@@ -97,7 +132,7 @@ class HttpService {
 		const middlewares = _.transform(
 			this.#routesMiddlewares,
 			(acc, routesMiddlewaresObject) => {
-				const isEligible = _.every(routesMiddlewaresObject.routes, route => this.#includesOrAny(route.paths, controller.path) && this.#includesOrAny(route.methods, controller.method) && this.#includesOrAny(route.controllers, controller.name));
+				const isEligible = _.some(routesMiddlewaresObject.routes, route => this.#includesOrAny(route.paths, controller.path) && this.#includesOrAny(route.methods, controller.method) && this.#includesOrAny(route.controllers, controller.name));
 				if (!isEligible) return;
 
 				acc.push(...routesMiddlewaresObject.middlewares);
@@ -130,7 +165,6 @@ class HttpService {
 			},
 			[]
 		);
-
 		this.#routes = routes;
 		return this;
 	}
@@ -148,6 +182,25 @@ class HttpService {
 
 	#middlewareWrapper(fn) {
 		return (req, res, next) => fn(req, res, next)?.catch(next);
+	}
+
+	#errorHandlerWrapper(fn) {
+		return (err, req, res, next) => {
+			// console.error('ERROR 💥', err);
+			let { statusCode, message, data } = fn(err, req, res, next);
+			const devInformation = {};
+			if (process.env.NODE_ENV === 'development') {
+				devInformation.error = err;
+				devInformation.stack = err.stack;
+			} else {
+				if (!err.isOperational) {
+					statusCode = 500;
+					response.message = 'Something went wrong!';
+				}
+			}
+
+			return res.status(statusCode || 500).json({ success: false, message, data, ...devInformation });
+		};
 	}
 
 	initApp(port) {

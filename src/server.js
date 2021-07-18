@@ -1,5 +1,5 @@
 import config from './config/index.js';
-import app from './app.js';
+import './app.js';
 import db from './db.js';
 import HttpService from './services/HttpService.js';
 

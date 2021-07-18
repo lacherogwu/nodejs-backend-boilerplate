@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import userAuthentication from './auth/userAuthentication.js';
 import speedLimiter from './speedLimiter.js';
-import HttpService from '../../services/HttpService.js';
+import { HttpService } from '../../services/index.js';
 
 // prettier-ignore
 HttpService
@@ -18,33 +18,34 @@ HttpService
 		speedLimiter
 	])
 	.buildRoutesMiddlewares([
-	{
-		routes: [
-			{
-				paths: ['users'],
-				methods: ['post'],
-				controllers: ['authenticate', 'logout', 'login'],
-			},
-		],
-		middlewares: [userAuthentication],
-	},
-	{
-		routes: [
-			{
-				paths: ['users'],
-				methods: ['*'],
-				controllers: ['*'],
-			},
-			// {
-			// 	paths: ['items'],
-			// 	methods: ['post'],
-			// 	controllers: ['getSomething'],
-			// },
-		],
-		middlewares: [
-			(req, res, next) => {
-				console.log('test');
-			},
-		],
-	},
-]);
+		{
+			routes: [
+				{
+					paths: ['users'],
+					methods: ['post'],
+					controllers: ['authenticate', 'logout', 'login'],
+				},
+			],
+			middlewares: [userAuthentication],
+		},
+		{
+			routes: [
+				{
+					paths: ['*'],
+					methods: ['*', 'get'],
+					controllers: ['*'],
+				},
+				{
+					paths: ['items'],
+					methods: ['post'],
+					controllers: ['getSomething'],
+				},
+			],
+			middlewares: [
+				(req, res, next) => {
+					console.log('test');
+					next()
+				},
+			],
+		},
+	]);

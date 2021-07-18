@@ -1,18 +1,58 @@
-import _ from 'lodash';
-import { AppError } from './shared/index.js';
-import errorHandler from './api/errorHandler.js';
-import './subscribers/email.js';
-import HttpService from './services/HttpService.js';
+// import './subscribers/email.js';
+import { HttpService } from './services/index.js';
 import './api/middlewares/index.js';
+import './api/errorHandler.js';
+import { AppError } from './shared/index.js';
 
 await HttpService.buildRoutes('./src/api/controllers/*.js');
-HttpService.setSettings().useApi().useErrorHandlers();
+const settings = {
+	'trust proxy': true,
+};
+HttpService.setSettings(settings).useApi().use404ErrorHandler().useGlobalErrorHandlers();
 
-// _.each(api, router => app.use(router));
+HttpService.useGlobalErrorHandlers([
+	{
+		identifier: 'isAxiosError',
+		value: true,
+		mode: 'EQ',
+		handler: err => {
+			const status = err.response ? err.response.status : 500;
+			const message = !err.message.startsWith('Request') ? err.message : undefined;
+			const data = err.response ? err.response.data : undefined;
 
-// 404 error handler
-// app.all('*', (req, res, next) => next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404)));
-
-// app.use(errorHandler); // Global Error Handling Middleware
-
-export default HttpService.app;
+			return new AppError(message, status, data);
+		},
+	},
+	{
+		identifier: 'name',
+		value: 'CastError',
+		mode: 'EQ',
+		handler: err => new AppError(`Invalid ${err.path}: ${err.value}`, 400),
+	},
+	{
+		identifier: 'message',
+		value: 'User does not exists',
+		mode: 'EQ',
+		handler: err => new AppError(err.message, 404),
+	},
+	{
+		identifier: 'name',
+		value: 'ValidationError',
+		mode: 'EQ',
+		handler: err => {
+			const message = Object.values(err.errors)
+				.map(i => i.message)
+				.join(', ');
+			return new AppError(`Invalid input data. ${message}`, 400);
+		},
+	},
+	{
+		identifier: 'code',
+		value: 11000,
+		mode: 'EQ',
+		handler: err => {
+			const entries = Object.entries(err.keyValue);
+			return new AppError(`Duplicated key. ${entries[0][0]}: ${entries[0][1]}`, 400);
+		},
+	},
+]);
