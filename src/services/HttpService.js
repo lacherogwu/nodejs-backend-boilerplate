@@ -29,6 +29,16 @@ class HttpService {
 	 */
 	#routes;
 
+	/**
+	 * @type {[{
+	 * 	identifier: string,
+	 * 	value: *,
+	 * 	mode: ('EQ'|'IN'),
+	 * 	handler: (err: Error) => { statusCode: number, message: string, data: {} }
+	 * }]}
+	 */
+	#errorHandlers;
+
 	constructor() {
 		this.app = express();
 	}
@@ -52,30 +62,6 @@ class HttpService {
 	 * 	handler: (err: Error) => { statusCode: number, message: string, data: {} }
 	 * }]} errorHandlers
 	 */
-	useGlobalErrorHandlers(errorHandlers) {
-		this.app.use(
-			this.#errorHandlerWrapper((err, req, res, next) => {
-				console.log('heere');
-				const errorHandler = _.find(errorHandlers, errorHandlerObject => {
-					const modes = {
-						EQ: (a, b) => a === b,
-						IN: (a, b) => _.includes(a, b),
-					};
-					return modes[errorHandlerObject.mode || 'EQ'](err[errorHandlerObject.identifier], errorHandlerObject.value);
-				});
-				return errorHandler?.handler(err) || {};
-			})
-		);
-	}
-
-	/**
-	 *
-	 * @returns HttpService
-	 */
-	use404ErrorHandler() {
-		this.app.all('*', (req, res, next) => next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404)));
-		return this;
-	}
 
 	#useGlobalMiddlewares() {
 		_.each(this.#globalMiddlewares, middleware => this.app.use(middleware));
@@ -88,9 +74,36 @@ class HttpService {
 		});
 	}
 
+	/**
+	 *
+	 * @returns HttpService
+	 */
+	#use404ErrorHandler() {
+		this.app.all('*', (req, res, next) => next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404)));
+		return this;
+	}
+
+	#useGlobalErrorHandlers() {
+		this.app.use(
+			this.#errorHandlerWrapper((err, req, res, next) => {
+				const errorHandler = _.find(this.#errorHandlers, errorHandlerObject => {
+					const modes = {
+						EQ: (a, b) => a === b,
+						IN: (a, b) => _.includes(a, b),
+					};
+					return modes[errorHandlerObject.mode || 'EQ'](err[errorHandlerObject.identifier], errorHandlerObject.value);
+				});
+
+				return errorHandler?.handler(err) || (err.isOperational ? err : {});
+			})
+		);
+	}
+
 	useApi() {
 		this.#useGlobalMiddlewares();
 		this.#useRoutesAndMiddlewares();
+		this.#use404ErrorHandler();
+		this.#useGlobalErrorHandlers();
 
 		return this;
 	}
@@ -120,6 +133,20 @@ class HttpService {
 		return this;
 	}
 
+	/**
+	 *
+	 * @param {[{
+	 * 	identifier: string,
+	 * 	value: *,
+	 * 	mode: ('EQ'|'IN'),
+	 * 	handler: (err: Error) => { statusCode: number, message: string, data: {} }
+	 * }]} errorHandlers
+	 */
+	buildGlobalErrorHandlers(errorHandlers) {
+		this.#errorHandlers = errorHandlers;
+		return this;
+	}
+
 	#includesOrAny(array, string) {
 		return _.includes(array, string) || _.includes(array, '*');
 	}
@@ -145,15 +172,21 @@ class HttpService {
 	/**
 	 *
 	 * @param {string} controllersPath
-	 * @returns HttpService
+	 * @param {number} pathSplitIndex - Where to get the path name from the realPath
 	 */
-	async buildRoutes(controllersPath) {
+	async buildRoutes(controllersPath, pathSplitIndex = 0) {
 		const files = glob.sync(controllersPath, { realpath: true });
 
 		const routes = await Aigle.transform(
 			files,
 			async (acc, realPath) => {
-				const [path] = _(realPath).split('/').pop().split('.');
+				const [path] = _(realPath)
+					.split('/')
+					.findLast((item, index, list) => {
+						const listLength = list.length - 1;
+						if (index === listLength - pathSplitIndex) return true;
+					})
+					.split('.');
 				const { default: controllers } = await import(realPath);
 				const routes = _.map(controllers, (handler, key) => {
 					const [method, name = ''] = _.split(key, '_');
@@ -166,7 +199,7 @@ class HttpService {
 			[]
 		);
 		this.#routes = routes;
-		return this;
+		return routes;
 	}
 
 	#controllerWrapper(fn) {
@@ -186,8 +219,9 @@ class HttpService {
 
 	#errorHandlerWrapper(fn) {
 		return (err, req, res, next) => {
-			// console.error('ERROR 💥', err);
+			console.error('ERROR 💥', err);
 			let { statusCode, message, data } = fn(err, req, res, next);
+
 			const devInformation = {};
 			if (process.env.NODE_ENV === 'development') {
 				devInformation.error = err;
@@ -195,7 +229,7 @@ class HttpService {
 			} else {
 				if (!err.isOperational) {
 					statusCode = 500;
-					response.message = 'Something went wrong!';
+					message = 'Something went wrong!';
 				}
 			}
 
